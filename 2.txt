@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LoL Champions Search</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #0d1b2a;
+            color: #e0e1dd;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .container {
+            text-align: center;
+            max-width: 600px;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 20px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        #results {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .champion {
+            padding: 20px;
+            background: #1b263b;
+            border-radius: 5px;
+            text-align: left;
+        }
+
+        .champion img {
+            max-width: 100px;
+            border-radius: 10px;
+        }
+
+        .champion h3 {
+            margin: 0 0 10px;
+        }
+
+        .items, .runes {
+            margin-top: 10px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .items img, .runes img {
+            max-width: 50px;
+            border-radius: 5px;
+        }
+
+        .details {
+            text-align: left;
+            margin-top: 20px;
+            background: #1b263b;
+            padding: 20px;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>League of Legends Champions</h1>
+        <input type="text" id="search" placeholder="Search Champion..." />
+        <div id="results"></div>
+        <div id="championDetails" class="details" style="display:none;"></div>
+    </div>
+
+    <script>
+        const searchInput = document.getElementById('search');
+        const resultsDiv = document.getElementById('results');
+        const detailsDiv = document.getElementById('championDetails');
+
+        const CHAMPION_API_URL = `https://ddragon.leagueoflegends.com/cdn/13.20.1/data/en_US/champion.json`;
+        const ITEM_API_URL = `https://ddragon.leagueoflegends.com/cdn/13.20.1/data/en_US/item.json`;
+        const IMAGE_BASE_URL = "https://ddragon.leagueoflegends.com/cdn/13.20.1/img/";
+
+        let champions = {};
+        let items = {};
+
+        // Example rune data (static)
+        const runeData = {
+            Ahri: ["https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/Sorcery/SummonAery/SummonAery.png"],
+            Garen: ["https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/Resolve/GraspOfTheUndying/GraspOfTheUndying.png"],
+            Jinx: ["https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/Precision/LethalTempo/LethalTempoTemp.png"],
+        };
+
+        // Fetch item and champion data
+        async function fetchData() {
+            const championResponse = await fetch(CHAMPION_API_URL);
+            const itemResponse = await fetch(ITEM_API_URL);
+
+            champions = (await championResponse.json()).data;
+            items = (await itemResponse.json()).data;
+        }
+
+        // Render champions with basic details and "more info" button
+        function renderChampions(query) {
+            resultsDiv.innerHTML = '';
+
+            Object.values(champions).forEach(champion => {
+                if (champion.name.toLowerCase().includes(query)) {
+                    resultsDiv.innerHTML += `
+                        <div class="champion">
+                            <img src="${IMAGE_BASE_URL}champion/${champion.image.full}" alt="${champion.name}">
+                            <h3>${champion.name}</h3>
+                            <p>${champion.title}</p>
+                            <button onclick="showDetails('${champion.id}')">More Info</button>
+                        </div>
+                    `;
+                }
+            });
+        }
+
+        // Show detailed info about a selected champion
+        function showDetails(championId) {
+            const champion = champions[championId];
+            const suggestedItems = [6655, 3020, 3165]; // Replace with role-specific items
+            const runes = runeData[champion.name] || [];
+
+            detailsDiv.style.display = 'block';
+            detailsDiv.innerHTML = `
+                <h2>${champion.name}</h2>
+                <img src="${IMAGE_BASE_URL}champion/${champion.image.full}" alt="${champion.name}">
+                <p><strong>Title:</strong> ${champion.title}</p>
+                <p><strong>Role:</strong> ${champion.tags.join(', ')}</p>
+                <div class="items">
+                    <strong>Recommended Items:</strong>
+                    ${suggestedItems.map(
+                        itemId => `<img src="${IMAGE_BASE_URL}item/${itemId}.png" alt="${items[itemId]?.name}" title="${items[itemId]?.name}">`
+                    ).join('')}
+                </div>
+                <div class="runes">
+                    <strong>Recommended Runes:</strong>
+                    ${runes.map(
+                        rune => `<img src="${rune}" alt="Rune" title="Rune">`
+                    ).join('')}
+                </div>
+            `;
+        }
+
+        // Initialize
+        async function initialize() {
+            await fetchData();
+
+            searchInput.addEventListener('input', event => {
+                const query = event.target.value.toLowerCase();
+                renderChampions(query);
+            });
+        }
+
+        initialize();
+    </script>
+</body>
+</html>
